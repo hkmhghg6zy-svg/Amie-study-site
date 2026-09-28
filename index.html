@@ -828,7 +828,8 @@
 
   <script>
     (() => {
-      const STORAGE_KEY = "study-planner-v2";
+      const STORAGE_KEY = "study-planner-v2:amie-study-site";
+      const LEGACY_STORAGE_KEY = "study-planner-v2";
       const CLASS_NOTES_VERSION = 3;
       const today = startOfDay(new Date());
       let selectedDate = toDateKey(today);
@@ -844,11 +845,13 @@
       ];
       let encouragementIndex = 0;
       let encouragementHideTimer;
+      let restoredLegacyData = false;
 
       const $ = (selector) => document.querySelector(selector);
       const $$ = (selector) => [...document.querySelectorAll(selector)];
 
       let state = loadState();
+      if (restoredLegacyData) showToast("Older planner data copied to Amie’s separate storage");
 
       function startOfDay(date) {
         return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12);
@@ -992,7 +995,9 @@
 
       function loadState() {
         try {
-          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          const currentValue = localStorage.getItem(STORAGE_KEY);
+          const isUsingLegacyData = currentValue === null;
+          const saved = JSON.parse(isUsingLegacyData ? localStorage.getItem(LEGACY_STORAGE_KEY) : currentValue);
           if (saved && Array.isArray(saved.events) && Array.isArray(saved.tasks)) {
             const loaded = {
               ...saved,
@@ -1002,6 +1007,11 @@
             if (loaded.classNotesVersion !== CLASS_NOTES_VERSION) {
               loaded.classNotes = {};
               loaded.classNotesVersion = CLASS_NOTES_VERSION;
+            }
+            const hasPlannerData = loaded.events.length > 0 || loaded.tasks.length > 0 || Boolean(String(loaded.notes || "").trim()) || Object.keys(loaded.classNotes).length > 0;
+            if (isUsingLegacyData && hasPlannerData) {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
+              restoredLegacyData = true;
             }
             return loaded;
           }
