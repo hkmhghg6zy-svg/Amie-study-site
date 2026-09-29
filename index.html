@@ -928,7 +928,7 @@
       const PASSWORD_RESET_REDIRECT_URL = "https://hkmhghg6zy-svg.github.io/Amie-study-site/";
       const cloudClient = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
       const STORAGE_KEY = "study-planner-v2:amie-study-site";
-      const LEGACY_STORAGE_KEY = "study-planner-v2";
+      const LEGACY_STORAGE_KEY = "study-planner-v2:amie-study-site:legacy";
       const CLOUD_OWNER_KEY = `${STORAGE_KEY}:cloud-owner`;
       const CLASS_NOTES_VERSION = 3;
       const today = startOfDay(new Date());
