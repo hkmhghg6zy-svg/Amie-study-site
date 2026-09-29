@@ -53,6 +53,51 @@
       outline-offset: 2px;
     }
 
+    .auth-screen[hidden] { display: none; }
+    .auth-screen {
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      overflow: hidden;
+      padding: 32px 22px;
+    }
+    .auth-screen::before, .auth-screen::after {
+      position: fixed;
+      border-radius: 50%;
+      content: "";
+      pointer-events: none;
+    }
+    .auth-screen::before { top: -18rem; right: -9rem; width: 42rem; height: 42rem; background: rgba(216, 184, 130, 0.16); }
+    .auth-screen::after { bottom: -22rem; left: -11rem; width: 48rem; height: 48rem; background: rgba(153, 184, 145, 0.12); }
+    .auth-card {
+      position: relative;
+      z-index: 1;
+      width: min(470px, 100%);
+      padding: clamp(30px, 6vw, 56px);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255, 253, 247, 0.78);
+      box-shadow: 0 24px 90px rgba(76, 64, 46, 0.12);
+      backdrop-filter: blur(12px);
+    }
+    .auth-mark { display: grid; width: 46px; height: 46px; place-items: center; margin: 0; border: 1px solid rgba(118, 149, 111, 0.35); border-radius: 14px; color: var(--ink); background: var(--mint); font-size: 23px; font-weight: 800; }
+    .auth-eyebrow { margin: 19px 0 0; color: var(--faint); font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+    .auth-title { margin: 18px 0 8px; color: var(--ink); font-size: clamp(31px, 5vw, 48px); font-weight: 600; line-height: 1; letter-spacing: -0.055em; }
+    .auth-copy { margin: 0 0 25px; color: var(--muted); font-size: 13px; }
+    .auth-form { display: grid; gap: 13px; }
+    .auth-form[hidden] { display: none; }
+    .auth-field { display: grid; gap: 6px; }
+    .auth-field label { color: var(--muted); font-family: var(--mono); font-size: 10px; text-transform: uppercase; }
+    .auth-field input { width: 100%; padding: 11px 12px; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--ink); background: rgba(255, 253, 247, 0.82); outline: 0; }
+    .auth-field input:focus { border-color: var(--mint-deep); box-shadow: 0 0 0 3px rgba(169, 197, 161, 0.18); }
+    .auth-submit { width: 100%; margin-top: 6px; }
+    .auth-link { display: block; width: 100%; margin: 11px 0 0; padding: 0; border: 0; color: var(--mint-deep); background: transparent; font-family: var(--mono); font-size: 10px; text-align: center; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+    .auth-link:hover { color: var(--ink); }
+    .auth-back { width: 100%; margin-top: 0; }
+    .auth-status { min-height: 18px; margin: 13px 0 0; color: var(--muted); font-family: var(--mono); font-size: 10px; }
+    .auth-status.error { color: #a35f55; }
+    .auth-offline { width: 100%; margin-top: 8px; }
+
     .app-shell {
       display: grid;
       grid-template-columns: 244px minmax(0, 1fr);
@@ -172,8 +217,10 @@
 
     .storage-note { padding: 0 10px; color: var(--faint); font-family: var(--mono); font-size: 10px; }
     .storage-note span { color: var(--mint-deep); font-size: 9px; }
+    .storage-note.cloud { color: var(--mint-deep); }
+    .storage-note.offline { color: var(--amber); }
 
-    .reset-button {
+    .reset-button, .signout-button {
       padding: 5px 10px;
       border: 0;
       color: var(--faint);
@@ -182,7 +229,7 @@
       font-size: 11px;
       text-align: left;
     }
-    .reset-button:hover { color: var(--muted); }
+    .reset-button:hover, .signout-button:hover { color: var(--muted); }
 
     main { min-width: 0; padding: 34px clamp(20px, 4vw, 58px) 64px; }
     .main-inner { width: min(1420px, 100%); margin: 0 auto; }
@@ -541,7 +588,53 @@
   </style>
 </head>
 <body>
-  <div class="app-shell" id="planner-app">
+  <section class="auth-screen" id="auth-screen" aria-labelledby="auth-title">
+    <div class="auth-card">
+      <div class="auth-mark" aria-hidden="true">+</div>
+      <p class="auth-eyebrow">study planner / cloud sign-in</p>
+      <h1 class="auth-title" id="auth-title">Your planner, wherever you work.</h1>
+      <p class="auth-copy" id="auth-copy">Sign in to keep your calendar, tasks and notes safely synced with the cloud.</p>
+
+      <form class="auth-form" id="auth-form">
+        <div class="auth-field">
+          <label for="auth-email">Email</label>
+          <input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com" />
+        </div>
+        <div class="auth-field">
+          <label for="auth-password">Password</label>
+          <input id="auth-password" type="password" autocomplete="current-password" required placeholder="Your Supabase password" />
+        </div>
+        <button class="button primary auth-submit" type="submit" id="auth-submit">sign in and sync</button>
+      </form>
+      <button class="auth-link" type="button" data-show-reset-request>forgot password?</button>
+
+      <form class="auth-form" id="reset-request-form" hidden>
+        <div class="auth-field">
+          <label for="reset-email">Email</label>
+          <input id="reset-email" type="email" autocomplete="email" required placeholder="you@example.com" />
+        </div>
+        <button class="button primary auth-submit" type="submit" id="reset-request-submit">email me a reset link</button>
+        <button class="button ghost auth-back" type="button" data-back-to-sign-in>back to sign in</button>
+      </form>
+
+      <form class="auth-form" id="password-update-form" hidden>
+        <div class="auth-field">
+          <label for="new-password">New password</label>
+          <input id="new-password" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters" />
+        </div>
+        <div class="auth-field">
+          <label for="confirm-password">Confirm new password</label>
+          <input id="confirm-password" type="password" autocomplete="new-password" minlength="8" required placeholder="Enter it again" />
+        </div>
+        <button class="button primary auth-submit" type="submit" id="password-update-submit">set new password</button>
+      </form>
+
+      <p class="auth-status" id="auth-status" role="status" aria-live="polite">Your data will remain available locally as a fallback.</p>
+      <button class="button ghost auth-offline" type="button" data-continue-offline>continue offline for now</button>
+    </div>
+  </section>
+
+  <div class="app-shell" id="planner-app" hidden>
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">+</div>
@@ -565,7 +658,8 @@
           <strong id="focus-copy">A little progress counts.</strong>
           <div class="focus-progress"><span id="focus-progress"></span></div>
         </div>
-        <div class="storage-note" title="Your planner saves automatically in this browser on this device."><span>●</span> saves in this browser</div>
+        <div class="storage-note" id="storage-note" title="Your planner saves locally and to your private cloud account."><span>●</span> cloud sync starting…</div>
+        <button class="signout-button" type="button" data-sign-out>↪ sign out</button>
         <button class="reset-button" type="button" data-reset>↻ clear planner</button>
       </div>
     </aside>
@@ -661,8 +755,8 @@
         <section class="panel panel-padding classes-panel" id="classes">
           <div class="panel-heading">
             <div>
-              <h2>Classes <code>/ lecture notes</code></h2>
-              <p>Only lectures with saved notes appear here — repeating classes stay separate week by week.</p>
+              <h2>Classes <code>/ event notes</code></h2>
+              <p>Any calendar event can have notes — only events with saved notes appear here, and repeating events stay separate occurrence by occurrence.</p>
             </div>
             <div class="classes-panel-actions">
               <button class="button small ghost" type="button" data-open-class-note>＋ add notes</button>
@@ -764,15 +858,15 @@
     <form method="dialog" id="class-note-form">
       <div class="dialog-inner">
         <div class="dialog-heading">
-          <div><h2>Add class notes</h2><p>Choose the exact lecture occurrence you want to write about.</p></div>
+          <div><h2>Add event notes</h2><p>Choose the exact calendar event or repeating occurrence you want to write about.</p></div>
           <button class="close-dialog" type="button" data-close-dialog="class-note-dialog" aria-label="Close">×</button>
         </div>
         <div class="form-grid">
-          <div class="form-field full"><label for="class-note-occurrence">Lecture</label><select id="class-note-occurrence" name="occurrence" required></select></div>
+          <div class="form-field full"><label for="class-note-occurrence">Calendar event</label><select id="class-note-occurrence" name="occurrence" required></select></div>
           <div class="form-field full">
-            <label for="class-note-input">Notes from this lecture</label>
+            <label for="class-note-input">Notes from this event</label>
             <div class="note-composer">
-              <div class="note-toolbar" role="toolbar" aria-label="Class note formatting">
+              <div class="note-toolbar" role="toolbar" aria-label="Event note formatting">
                 <button class="note-tool" type="button" data-note-command="bold" title="Bold" aria-label="Bold"><strong>B</strong></button>
                 <button class="note-tool" type="button" data-note-command="uppercase" title="Make selected text uppercase" aria-label="Make selected text uppercase">CAP</button>
                 <button class="note-tool" type="button" data-note-command="italic" title="Italic" aria-label="Italic"><em>I</em></button>
@@ -781,7 +875,7 @@
                 <button class="note-tool" type="button" data-note-command="font-normal" title="Normal text size" aria-label="Use normal text size">A</button>
                 <button class="note-tool" type="button" data-note-command="font-large" title="Larger text" aria-label="Make text larger">A+</button>
               </div>
-              <div id="class-note-input" class="note-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notes from this lecture" data-note-editor data-placeholder="What did you learn? What should you revisit?"></div>
+              <div id="class-note-input" class="note-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notes from this event" data-note-editor data-placeholder="What did you learn? What should you revisit?"></div>
             </div>
           </div>
         </div>
@@ -826,10 +920,16 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     (() => {
+      const SUPABASE_URL = "https://gzqdpbnwptvbwooacxqu.supabase.co";
+      const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_YX5AAe2M8RgwHB-K-D5V_Q_oHudvqIn";
+      const PASSWORD_RESET_REDIRECT_URL = "https://hkmhghg6zy-svg.github.io/Amie-study-site/";
+      const cloudClient = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
       const STORAGE_KEY = "study-planner-v2:amie-study-site";
       const LEGACY_STORAGE_KEY = "study-planner-v2";
+      const CLOUD_OWNER_KEY = `${STORAGE_KEY}:cloud-owner`;
       const CLASS_NOTES_VERSION = 3;
       const today = startOfDay(new Date());
       let selectedDate = toDateKey(today);
@@ -846,9 +946,227 @@
       let encouragementIndex = 0;
       let encouragementHideTimer;
       let restoredLegacyData = false;
+      let cloudUser = null;
+      let cloudReady = false;
+      let cloudSaveTimer;
+      let cloudSyncInFlight = false;
+      let cloudSaveQueued = false;
+      let offlineMode = false;
+      let passwordRecoveryMode = false;
 
       const $ = (selector) => document.querySelector(selector);
       const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+      function setAuthStatus(message, error = false) {
+        const status = $("#auth-status");
+        if (!status) return;
+        status.textContent = message;
+        status.classList.toggle("error", error);
+      }
+
+      function setAuthView(view) {
+        const copy = {
+          signIn: {
+            title: "Your planner, wherever you work.",
+            message: "Sign in to keep your calendar, tasks and notes safely synced with the cloud."
+          },
+          requestReset: {
+            title: "Reset your planner password.",
+            message: "Enter your email and we’ll send you a secure reset link."
+          },
+          updatePassword: {
+            title: "Choose a new password.",
+            message: "Set a new password for your study planner account."
+          }
+        }[view] || {};
+        $("#auth-title").textContent = copy.title || "Your planner, wherever you work.";
+        $("#auth-copy").textContent = copy.message || "Sign in to keep your planner safely synced with the cloud.";
+        $("#auth-form").hidden = view !== "signIn";
+        $("#reset-request-form").hidden = view !== "requestReset";
+        $("#password-update-form").hidden = view !== "updatePassword";
+        $("[data-show-reset-request]").hidden = view !== "signIn";
+        $("[data-continue-offline]").hidden = view !== "signIn";
+      }
+
+      function setStorageStatus(message, mode = "cloud") {
+        const status = $("#storage-note");
+        if (!status) return;
+        status.innerHTML = `<span>●</span> ${escapeHtml(message)}`;
+        status.classList.toggle("cloud", mode === "cloud");
+        status.classList.toggle("offline", mode === "offline");
+      }
+
+      function showAuthScreen(message = "Sign in to sync your planner.") {
+        $("#auth-screen").hidden = false;
+        $("#planner-app").hidden = true;
+        setAuthView("signIn");
+        setAuthStatus(message);
+      }
+
+      function showPlanner() {
+        $("#auth-screen").hidden = true;
+        $("#planner-app").hidden = false;
+        window.scrollTo(0, 0);
+      }
+
+      function showPasswordRecoveryScreen(user = null) {
+        passwordRecoveryMode = true;
+        cloudUser = user || cloudUser;
+        cloudReady = false;
+        offlineMode = false;
+        $("#auth-screen").hidden = false;
+        $("#planner-app").hidden = true;
+        setAuthView("updatePassword");
+        setAuthStatus("Choose a new password to finish the reset.");
+        try {
+          window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+        } catch (error) {
+          console.warn("Could not clean the recovery URL", error);
+        }
+        $("#new-password").focus();
+      }
+
+      function plannerHasContent(value) {
+        if (!value) return false;
+        const hasNotes = Object.values(value.classNotes || {}).some((note) => noteText(note).trim());
+        return (Array.isArray(value.events) && value.events.length > 0)
+          || (Array.isArray(value.tasks) && value.tasks.length > 0)
+          || Boolean(noteText(value.notes || "").trim())
+          || hasNotes;
+      }
+
+      function copyPlannerState(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      function normalisePlannerState(saved) {
+        if (!saved || !Array.isArray(saved.events) || !Array.isArray(saved.tasks)) return emptyState();
+        const loaded = {
+          ...saved,
+          classNotes: saved.classNotes && typeof saved.classNotes === "object" && !Array.isArray(saved.classNotes) ? saved.classNotes : {}
+        };
+        if (loaded.classNotesVersion !== CLASS_NOTES_VERSION) {
+          loaded.classNotes = {};
+          loaded.classNotesVersion = CLASS_NOTES_VERSION;
+        }
+        return loaded;
+      }
+
+      function localStateForUser(userId) {
+        const currentOwner = localStorage.getItem(CLOUD_OWNER_KEY);
+        if (currentOwner && currentOwner !== userId) return emptyState();
+        return copyPlannerState(state);
+      }
+
+      async function syncCloudNow() {
+        if (!cloudClient || !cloudUser) return false;
+        if (cloudSyncInFlight) {
+          cloudSaveQueued = true;
+          return true;
+        }
+        cloudSyncInFlight = true;
+        const { error } = await cloudClient.from("planner_data").upsert({
+          user_id: cloudUser.id,
+          data: copyPlannerState(state),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "user_id" });
+        cloudSyncInFlight = false;
+        if (error) {
+          console.warn("Cloud save failed", error);
+          setStorageStatus("cloud save failed · local copy kept", "offline");
+        } else {
+          setStorageStatus("saved to cloud", "cloud");
+        }
+        if (cloudSaveQueued) {
+          cloudSaveQueued = false;
+          queueCloudSave();
+        }
+        return !error;
+      }
+
+      function queueCloudSave() {
+        if (!cloudReady || !cloudUser || offlineMode) return;
+        clearTimeout(cloudSaveTimer);
+        cloudSaveTimer = setTimeout(() => { syncCloudNow(); }, 700);
+      }
+
+      let cloudLoadPromise = null;
+      async function loadCloudForUser(user) {
+        if (!cloudClient || !user) return false;
+        if (cloudLoadPromise && cloudUser?.id === user.id) return cloudLoadPromise;
+        cloudUser = user;
+        cloudLoadPromise = (async () => {
+          cloudReady = false;
+          offlineMode = false;
+          showAuthScreen("Loading your planner from the cloud…");
+          const localState = localStateForUser(user.id);
+          const { data: row, error } = await cloudClient.from("planner_data").select("data, updated_at").eq("user_id", user.id).maybeSingle();
+          if (error) {
+            console.warn("Cloud load failed", error);
+            setAuthStatus("The cloud planner could not be loaded. Your local copy is still safe.", true);
+            return false;
+          }
+          const remoteState = row?.data ? normalisePlannerState(row.data) : null;
+          if (plannerHasContent(remoteState)) {
+            if (plannerHasContent(localState) && JSON.stringify(localState) !== JSON.stringify(remoteState)) {
+              localStorage.setItem(`${STORAGE_KEY}:local-backup:${user.id}`, JSON.stringify(localState));
+            }
+            state = remoteState;
+          } else {
+            state = localState;
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          localStorage.setItem(CLOUD_OWNER_KEY, user.id);
+          if (!plannerHasContent(remoteState)) {
+            const uploaded = await syncCloudNow();
+            if (!uploaded) {
+              setAuthStatus("Cloud saving failed. Your local copy is still safe.", true);
+              return false;
+            }
+          }
+          cloudReady = true;
+          setStorageStatus("saved to cloud", "cloud");
+          renderAll();
+          showPlanner();
+          return true;
+        })();
+        try {
+          return await cloudLoadPromise;
+        } finally {
+          cloudLoadPromise = null;
+        }
+      }
+
+      async function initialiseCloud() {
+        if (!cloudClient) {
+          showAuthScreen("Cloud connection unavailable · you can continue offline.");
+          return;
+        }
+        cloudClient.auth.onAuthStateChange((event, session) => {
+          if (event === "PASSWORD_RECOVERY") {
+            showPasswordRecoveryScreen(session?.user || null);
+            return;
+          }
+          if (event === "SIGNED_IN" && session?.user && !passwordRecoveryMode) setTimeout(() => loadCloudForUser(session.user), 0);
+          if (event === "SIGNED_OUT") {
+            cloudUser = null;
+            cloudReady = false;
+            offlineMode = false;
+            passwordRecoveryMode = false;
+            showAuthScreen("You have been signed out.");
+          }
+        });
+        const recoveryLinkInUrl = /(?:type=recovery|access_token=)/i.test(window.location.hash);
+        if (recoveryLinkInUrl) passwordRecoveryMode = true;
+        const { data, error } = await cloudClient.auth.getSession();
+        if (error) {
+          showAuthScreen("Please sign in to sync your planner.");
+          return;
+        }
+        if (passwordRecoveryMode && data.session?.user) showPasswordRecoveryScreen(data.session.user);
+        else if (data.session?.user) await loadCloudForUser(data.session.user);
+        else showAuthScreen("Sign in to sync your planner.");
+      }
 
       let state = loadState();
       if (restoredLegacyData) showToast("Older planner data copied to Amie’s separate storage");
@@ -1023,6 +1341,7 @@
 
       function saveState(message) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        queueCloudSave();
         if (message) showToast(message);
       }
 
@@ -1398,7 +1717,6 @@
 
       function allClassOccurrences() {
         return state.events
-          .filter((event) => event.type === "lecture")
           .flatMap((event) => classOccurrences(event))
           .sort((a, b) => `${a.date} ${a.event.start || ""} ${a.event.title}`.localeCompare(`${b.date} ${b.event.start || ""} ${b.event.title}`));
       }
@@ -1425,7 +1743,7 @@
       function openClassNoteDialog(eventId = "", occurrenceDate = "") {
         const occurrences = allClassOccurrences();
         if (!occurrences.length) {
-          showToast("Add a lecture to your calendar first");
+          showToast("Add a calendar event first");
           return;
         }
         const select = $("#class-note-occurrence");
@@ -1455,12 +1773,12 @@
 
       function renderClasses() {
         const list = $("#classes-list");
-        const lectures = allClassOccurrences().filter(({ event, date }) => noteText(classNoteValue(event, date)).trim());
-        if (!lectures.length) {
-          list.innerHTML = `<div class="classes-empty">No class notes yet. Choose a lecture with “＋ add notes” and this section will fill up as you write.</div>`;
+        const notedEvents = allClassOccurrences().filter(({ event, date }) => noteText(classNoteValue(event, date)).trim());
+        if (!notedEvents.length) {
+          list.innerHTML = `<div class="classes-empty">No event notes yet. Choose any calendar event with “＋ add notes” and this section will fill up as you write.</div>`;
           return;
         }
-        list.innerHTML = lectures.map(({ event, date }) => {
+        list.innerHTML = notedEvents.map(({ event, date }) => {
           const noteKey = classNoteKey(event, date);
           const recurringLabel = event.repeat ? " · weekly schedule" : "";
           return `
@@ -1470,11 +1788,11 @@
                 <span class="class-title">${escapeHtml(event.title)}</span>
                 <span class="class-meta">${escapeHtml(dateLabel(date, { weekday: "short", day: "numeric", month: "short", year: "numeric" }))}${event.start ? ` · ${escapeHtml(timeLabel(event))}` : ""}${recurringLabel}</span>
               </button>
-              <button class="edit-button" type="button" data-edit-event="${event.id}" aria-label="Edit the weekly schedule for ${escapeHtml(event.title)}">✎</button>
+              <button class="edit-button" type="button" data-edit-event="${event.id}" aria-label="Edit calendar event ${escapeHtml(event.title)}">✎</button>
             </div>
             <div class="note-composer class-note-composer">
               ${noteToolbarHtml()}
-              <div class="class-notes note-editor" contenteditable="true" data-note-editor data-class-notes="${noteKey}" data-class-owner="${event.id}" data-class-date="${date}" aria-label="Notes for ${escapeHtml(event.title)} on ${escapeHtml(dateLabel(date, { day: "numeric", month: "long", year: "numeric" }))}" data-placeholder="Add the notes you took in this lecture...">${noteHtml(classNoteValue(event, date))}</div>
+              <div class="class-notes note-editor" contenteditable="true" data-note-editor data-class-notes="${noteKey}" data-class-owner="${event.id}" data-class-date="${date}" aria-label="Notes for ${escapeHtml(event.title)} on ${escapeHtml(dateLabel(date, { day: "numeric", month: "long", year: "numeric" }))}" data-placeholder="Add notes for this event...">${noteHtml(classNoteValue(event, date))}</div>
             </div>
             <div class="class-footer">
               <span class="class-status" data-class-status="${noteKey}">saved locally</span>
@@ -1492,6 +1810,7 @@
             if (item?.repeat && event.currentTarget.dataset.classDate === item.date) delete state.classNotes[item.id];
             state.classNotesVersion = CLASS_NOTES_VERSION;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            queueCloudSave();
             const status = event.currentTarget.closest(".class-card").querySelector("[data-class-status]");
             status.textContent = "saving…";
             window.classNoteTimers = window.classNoteTimers || {};
@@ -1503,6 +1822,7 @@
             const noteKey = event.currentTarget.dataset.classNotes;
             delete state.classNotes[noteKey];
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            queueCloudSave();
             renderClasses();
           });
         });
@@ -1656,6 +1976,22 @@
           runNoteCommand(noteTool.dataset.noteCommand, noteTool.closest(".note-composer")?.querySelector(".note-editor"));
           return;
         }
+        const offlineButton = event.target.closest("[data-continue-offline]");
+        if (offlineButton) {
+          offlineMode = true;
+          cloudReady = false;
+          cloudUser = null;
+          setStorageStatus("local-only mode", "offline");
+          renderAll();
+          showPlanner();
+          return;
+        }
+        const signOutButton = event.target.closest("[data-sign-out]");
+        if (signOutButton) {
+          if (cloudClient) cloudClient.auth.signOut();
+          else showAuthScreen("You have been signed out.");
+          return;
+        }
         const dismissNudge = event.target.closest("[data-dismiss-nudge]");
         if (dismissNudge) { hideEncouragement(); return; }
         const openClassNoteButton = event.target.closest("[data-open-class-note]");
@@ -1738,6 +2074,83 @@
       $("#event-repeat").addEventListener("change", updateRepeatVisibility);
       $("#event-date").addEventListener("change", updateRepeatVisibility);
       $("#class-note-occurrence").addEventListener("change", updateClassNoteDialogInput);
+      $("#auth-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!cloudClient) {
+          setAuthStatus("The cloud connection could not load. Try refreshing the page.", true);
+          return;
+        }
+        const button = $("#auth-submit");
+        button.disabled = true;
+        setAuthStatus("Signing in…");
+        const { error } = await cloudClient.auth.signInWithPassword({
+          email: $("#auth-email").value.trim(),
+          password: $("#auth-password").value
+        });
+        if (error) setAuthStatus(error.message || "Those login details were not accepted.", true);
+        else setAuthStatus("Signed in · loading your planner…");
+        button.disabled = false;
+      });
+      $("[data-show-reset-request]").addEventListener("click", () => {
+        $("#reset-email").value = $("#auth-email").value.trim();
+        setAuthView("requestReset");
+        setAuthStatus("Enter your email to receive a reset link.");
+        $("#reset-email").focus();
+      });
+      $("[data-back-to-sign-in]").addEventListener("click", () => {
+        setAuthView("signIn");
+        setAuthStatus("Sign in to sync your planner.");
+        $("#auth-email").focus();
+      });
+      $("#reset-request-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!cloudClient) {
+          setAuthStatus("The cloud connection could not load. Try refreshing the page.", true);
+          return;
+        }
+        const button = $("#reset-request-submit");
+        button.disabled = true;
+        setAuthStatus("Sending your reset link…");
+        const { error } = await cloudClient.auth.resetPasswordForEmail($("#reset-email").value.trim(), {
+          redirectTo: PASSWORD_RESET_REDIRECT_URL
+        });
+        if (error) setAuthStatus(error.message || "The reset email could not be sent.", true);
+        else setAuthStatus("Check your email, then use the newest reset link to choose a new password.");
+        button.disabled = false;
+      });
+      $("#password-update-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!cloudClient) {
+          setAuthStatus("The cloud connection could not load. Try refreshing the page.", true);
+          return;
+        }
+        const password = $("#new-password").value;
+        const confirmation = $("#confirm-password").value;
+        if (password.length < 8) {
+          setAuthStatus("Use at least 8 characters for your new password.", true);
+          return;
+        }
+        if (password !== confirmation) {
+          setAuthStatus("Those two passwords do not match.", true);
+          return;
+        }
+        const button = $("#password-update-submit");
+        button.disabled = true;
+        setAuthStatus("Updating your password…");
+        const { error } = await cloudClient.auth.updateUser({ password });
+        if (error) {
+          setAuthStatus(error.message || "The password could not be updated.", true);
+          button.disabled = false;
+          return;
+        }
+        passwordRecoveryMode = false;
+        setAuthStatus("Password updated · loading your planner…");
+        const { data } = await cloudClient.auth.getUser();
+        const user = data?.user || cloudUser;
+        if (user) await loadCloudForUser(user);
+        else showAuthScreen("Password updated. Please sign in with your new password.");
+        button.disabled = false;
+      });
       $("#clear-confirm-checkbox").addEventListener("change", (event) => {
         $("#confirm-clear").disabled = !event.target.checked;
       });
@@ -1789,7 +2202,7 @@
         if (hasNotes) state.classNotes[noteKey] = value;
         else delete state.classNotes[noteKey];
         state.classNotesVersion = CLASS_NOTES_VERSION;
-        saveState(hasNotes ? "Class notes saved" : "Class notes cleared");
+        saveState(hasNotes ? "Event notes saved" : "Event notes cleared");
         closeDialog("class-note-dialog");
         renderAll();
       });
@@ -1808,6 +2221,7 @@
       $("#notes-input").addEventListener("input", (event) => {
         state.notes = sanitizeNoteHtml(event.currentTarget.innerHTML);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        queueCloudSave();
         $("#notes-status").textContent = "saving…";
         clearTimeout(window.notesSaveTimer);
         window.notesSaveTimer = setTimeout(() => { $("#notes-status").textContent = "saved locally"; }, 500);
@@ -1820,6 +2234,7 @@
       renderAll();
       setInterval(renderClock, 1000);
       setInterval(showEncouragement, ENCOURAGEMENT_INTERVAL);
+      initialiseCloud();
     })();
   </script>
 </body>
